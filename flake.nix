@@ -17,6 +17,18 @@
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH988C5DbEPHfoCphoW23MWq9M6fmA4UTXREiZU0J7n0 will.hetzner@temp.com"
       ];
       stateVersion = "25.11";
+
+      # TODO: Remove this overlay when guix 1.5.0 lands in nixpkgs unstable
+      guixOverlay = final: prev: {
+        guix = prev.guix.overrideAttrs (old: rec {
+          version = "1.5.0";
+          src = prev.fetchgit {
+            url = "https://codeberg.org/guix/guix.git";
+            rev = "d7a1abe9d8465561f58f93a01b7ef439a06fa300"; # v1.5.0
+            hash = "sha256-X50+7Y+HGKEdmx0Epz9y688eDkonnAItOkkq/SftMXw=";
+          };
+        });
+      };
     in
     {
       formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt-tree;
@@ -27,6 +39,7 @@
           disko.nixosModules.disko
           home-manager.nixosModules.home-manager
           ./hosts/guix-ci/configuration.nix
+          { nixpkgs.overlays = [ guixOverlay ]; }
           (
             { pkgs, lib, ... }:
             {
