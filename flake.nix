@@ -70,6 +70,66 @@
                 };
               };
 
+              systemd.tmpfiles.rules = [
+                "d /data/sdk 0755 satoshi users -"
+                "d /data/sources 0755 satoshi users -"
+                "d /data/cache 0755 satoshi users -"
+                "d /data/bitcoin 0755 satoshi users -"
+              ];
+
+              systemd.services.bitcoin-sdk-download = {
+                description = "Download Bitcoin macOS SDK";
+                wantedBy = [ "multi-user.target" ];
+                unitConfig.ConditionPathExists = "!/data/sdk/Xcode-15.0-15A240d-extracted-SDK-with-libcxx-headers";
+                serviceConfig = {
+                  Type = "oneshot";
+                  RemainAfterExit = true;
+                  User = "satoshi";
+                  WorkingDirectory = "/data";
+                  ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.curl}/bin/curl -fL https://bitcoincore.org/depends-sources/sdks/Xcode-15.0-15A240d-extracted-SDK-with-libcxx-headers.tar | ${pkgs.gnutar}/bin/tar -xf - -C /data/sdk'";
+                };
+              };
+
+              systemd.services.bitcoin-repo-setup = {
+                description = "Clone Bitcoin repository";
+                wantedBy = [ "multi-user.target" ];
+                unitConfig.ConditionPathExists = "!/data/bitcoin/.git";
+                serviceConfig = {
+                  Type = "oneshot";
+                  RemainAfterExit = true;
+                  User = "satoshi";
+                  WorkingDirectory = "/data";
+                  ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.git}/bin/git clone https://github.com/willcl-ark/bitcoin.git /data/bitcoin && ${pkgs.git}/bin/git -C /data/bitcoin remote add upstream https://github.com/bitcoin/bitcoin.git'";
+                };
+              };
+
+              systemd.services.bitcoin-ci = {
+                description = "Bitcoin Guix CI";
+                wantedBy = [ "multi-user.target" ];
+                after = [
+                  "bitcoin-sdk-download.service"
+                  "bitcoin-repo-setup.service"
+                  "guix-daemon.service"
+                ];
+                requires = [
+                  "bitcoin-sdk-download.service"
+                  "bitcoin-repo-setup.service"
+                ];
+                environment = {
+                  SDK_PATH = "/data/sdk";
+                  SOURCES_PATH = "/data/sources";
+                  BASE_CACHE = "/data/cache";
+                };
+                serviceConfig = {
+                  Type = "simple";
+                  User = "satoshi";
+                  WorkingDirectory = "/data/bitcoin";
+                  ExecStart = "${pkgs.cmake}/bin/ctest -S guix.cmake";
+                  Restart = "on-failure";
+                  RestartSec = "30s";
+                };
+              };
+
               nix.settings.experimental-features = [
                 "nix-command"
                 "flakes"
