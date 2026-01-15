@@ -99,7 +99,7 @@
                   RemainAfterExit = true;
                   User = "satoshi";
                   WorkingDirectory = "/data";
-                  ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.git}/bin/git clone https://github.com/willcl-ark/bitcoin.git /data/bitcoin && ${pkgs.git}/bin/git -C /data/bitcoin remote add upstream https://github.com/bitcoin/bitcoin.git'";
+                  ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.git}/bin/git clone -b guix-ci https://github.com/willcl-ark/bitcoin.git /data/bitcoin && ${pkgs.git}/bin/git -C /data/bitcoin remote add upstream https://github.com/bitcoin/bitcoin.git'";
                 };
               };
 
