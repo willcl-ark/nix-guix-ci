@@ -28,7 +28,7 @@
           home-manager.nixosModules.home-manager
           ./hosts/guix-ci/configuration.nix
           (
-            { pkgs, ... }:
+            { pkgs, lib, ... }:
             {
               boot.loader.grub = {
                 efiSupport = true;
@@ -119,14 +119,21 @@
                   SDK_PATH = "/data/sdk";
                   SOURCES_PATH = "/data/sources";
                   BASE_CACHE = "/data/cache";
+                  PATH = lib.mkForce "/run/current-system/sw/bin:/run/wrappers/bin";
                 };
                 serviceConfig = {
                   Type = "simple";
                   User = "satoshi";
                   WorkingDirectory = "/data/bitcoin";
-                  ExecStart = "${pkgs.cmake}/bin/ctest -S guix.cmake";
+                  ExecStart = "${pkgs.cmake}/bin/ctest -S guix.cmake -VV";
                   Restart = "on-failure";
                   RestartSec = "30s";
+                  ReadWritePaths = [
+                    "/data/bitcoin"
+                    "/data/sdk"
+                    "/data/sources"
+                    "/data/cache"
+                  ];
                 };
               };
 
@@ -155,6 +162,7 @@
                 findutils
                 git
                 gnugrep
+                gnumake
                 gnused
                 gnutar
                 htop
@@ -209,6 +217,15 @@
                 programs = {
                   bash.enable = true;
                   bash.bashrcExtra = "";
+
+                  git = {
+                    enable = true;
+                    settings = {
+                      user.name = "Satoshi Nakamoto";
+                      user.email = "satoshi@bitcoin.org";
+                      safe.directory = "/data/bitcoin";
+                    };
+                  };
 
                   direnv = {
                     enable = true;

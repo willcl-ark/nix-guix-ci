@@ -24,7 +24,7 @@ dry-run type=default_host:
 # Deploy configuration to a machine
 [group('live')]
 deploy type=default_host host=default_host:
-    nix-shell -p nixos-anywhere --command "nixos-anywhere --flake .#{{type}} {{host}}"
+    nix-shell -p nixos-anywhere --command "nixos-anywhere --flake .#{{type}} --target-host {{host}}"
 
 # Copy flake to remote for local building
 [group('live')]
@@ -36,3 +36,9 @@ sync host=default_host:
 [group('live')]
 rebuild type=default_host host=default_host:
     nixos-rebuild switch --flake .#{{type}} --target-host {{host}}
+
+# Sync and rebuild on remote machine
+[group('live')]
+sync-rebuild type=default_host host=default_host:
+    rsync -av --exclude=result* . {{host}}:/etc/nixos-config/
+    ssh {{host}} "chown -R root:root /etc/nixos-config && nixos-rebuild switch --flake /etc/nixos-config#{{type}}"
