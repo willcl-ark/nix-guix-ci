@@ -1,6 +1,6 @@
-cmake_host_system_information(RESULT HOST_NAME QUERY HOSTNAME)
+cmake_host_system_information(RESULT OS_PLATFORM QUERY OS_PLATFORM)
 
-set(CTEST_SITE ${HOST_NAME})
+set(CTEST_SITE "${OS_PLATFORM}-nixos-ryzen5")
 set(CTEST_BUILD_NAME "Guix")
 set(CTEST_SOURCE_DIRECTORY "/data/bitcoin")
 set(CTEST_BINARY_DIRECTORY "/data/bitcoin")
