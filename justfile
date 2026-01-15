@@ -42,3 +42,18 @@ rebuild type=default_host host=default_host:
 sync-rebuild type=default_host host=default_host:
     rsync -av --exclude=result* . {{host}}:/etc/nixos-config/
     ssh {{host}} "chown -R root:root /etc/nixos-config && nixos-rebuild switch --flake /etc/nixos-config#{{type}}"
+
+# Follow CI logs
+[group('monitor')]
+logs host=default_host:
+    ssh {{host}} "journalctl -u bitcoin-ci -f"
+
+# Check CI service status
+[group('monitor')]
+status host=default_host:
+    ssh {{host}} "systemctl status bitcoin-ci"
+
+# Check all bitcoin services status
+[group('monitor')]
+status-all host=default_host:
+    ssh {{host}} "systemctl status bitcoin-*"

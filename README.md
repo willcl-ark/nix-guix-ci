@@ -98,14 +98,9 @@ just rebuild   # rebuild on remote
 ### Monitoring
 
 ```bash
-# Follow CI logs
-ssh guix-ci "journalctl -u bitcoin-ci -f"
-
-# Check service status
-ssh guix-ci "systemctl status bitcoin-ci"
-
-# Check all CI-related services
-ssh guix-ci "systemctl status bitcoin-*"
+just logs       # Follow CI logs
+just status     # Check CI service status
+just status-all # Check all bitcoin-* services
 ```
 
 ## Data Layout
@@ -150,4 +145,7 @@ just deploy       # Initial deployment to fresh server
 just sync         # Copy config to remote
 just rebuild      # Rebuild on remote
 just sync-rebuild # Sync and rebuild in one step
+just logs         # Follow CI logs
+just status       # Check CI service status
+just status-all   # Check all bitcoin-* services
 ```
