@@ -21,12 +21,12 @@
     {
       formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt-tree;
 
-      nixosConfigurations.ax52 = nixpkgs.lib.nixosSystem {
+      nixosConfigurations.guix-ci = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [
           disko.nixosModules.disko
           home-manager.nixosModules.home-manager
-          ./hosts/ax52/configuration.nix
+          ./hosts/guix-ci/configuration.nix
           (
             { pkgs, ... }:
             {

@@ -1,9 +1,6 @@
 set shell := ["bash", "-uc"]
 
-os := os()
-ax52 := 'ax52'
-github-runner := 'runner-root'
-GH_TOKEN := env('RUNNER_TOKEN', 'RUNNER_TOKEN NOT SET')
+default_host := 'guix-ci'
 
 [private]
 default:
@@ -11,34 +8,31 @@ default:
 
 # Build configuration without deploying
 [group('test')]
-build type=ax52:
+build type=default_host:
     nixos-rebuild build --flake .#{{type}} --show-trace
 
 # Build VM for testing
 [group('test')]
-build-vm type=ax52:
+build-vm type=default_host:
     nixos-rebuild build-vm --flake .#{{type}} --show-trace
 
 # Show what would change without building
 [group('test')]
-dry-run type=ax52:
+dry-run type=default_host:
     nixos-rebuild dry-run --flake .#{{type}} --show-trace
 
-# Deploy a github CI runner to a machine
+# Deploy configuration to a machine
 [group('live')]
-deploy type=ax52 host=github-runner:
+deploy type=default_host host=default_host:
     nix-shell -p nixos-anywhere --command "nixos-anywhere --flake .#{{type}} {{host}}"
 
 # Copy flake to remote for local building
 [group('live')]
-sync host=github-runner:
+sync host=default_host:
     rsync -av --exclude=result* . {{host}}:/etc/nixos-config/
     ssh {{host}} "chown -R root:root /etc/nixos-config"
 
-# Rebuild a github CI runner on a machine with a new token
+# Rebuild configuration on remote machine
 [group('live')]
-rebuild type=ax52 host=github-runner gh_token=GH_TOKEN:
-    RUNNER_TOKEN={{gh_token}} nixos-rebuild switch --flake .#{{type}} --target-host {{host}} --impure
-    echo "After sync, to apply config run:"
-    echo "ssh {{host}} "cd /etc/nixos-config && source .env && RUNNER_TOKEN=\$GH_TOKEN nixos-rebuild switch --flake .#{{type}} --impure && rm -f .env"
-
+rebuild type=default_host host=default_host:
+    nixos-rebuild switch --flake .#{{type}} --target-host {{host}}
