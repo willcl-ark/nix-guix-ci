@@ -75,6 +75,9 @@
                 "d /data/sources 0755 satoshi users -"
                 "d /data/cache 0755 satoshi users -"
                 "d /data/bitcoin 0755 satoshi users -"
+                "d /data/ci 0755 satoshi users -"
+                "L+ /data/ci/guix.cmake - - - - ${./scripts/guix.cmake}"
+                "L+ /data/bitcoin/CTestConfig.cmake - - - - ${./scripts/CTestConfig.cmake}"
               ];
 
               systemd.services.bitcoin-sdk-download = {
@@ -99,7 +102,7 @@
                   RemainAfterExit = true;
                   User = "satoshi";
                   WorkingDirectory = "/data";
-                  ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.git}/bin/git clone -b guix-ci https://github.com/willcl-ark/bitcoin.git /data/bitcoin && ${pkgs.git}/bin/git -C /data/bitcoin remote add upstream https://github.com/bitcoin/bitcoin.git'";
+                  ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.git}/bin/git clone https://github.com/bitcoin/bitcoin.git /data/bitcoin'";
                 };
               };
 
@@ -125,7 +128,7 @@
                   Type = "simple";
                   User = "satoshi";
                   WorkingDirectory = "/data/bitcoin";
-                  ExecStart = "${pkgs.cmake}/bin/ctest -S guix.cmake -VV";
+                  ExecStart = "${pkgs.cmake}/bin/ctest -S /data/ci/guix.cmake -VV";
                   Restart = "on-failure";
                   RestartSec = "30s";
                   ReadWritePaths = [
