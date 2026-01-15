@@ -4,33 +4,32 @@ NixOS configuration for running continuous Guix builds of Bitcoin Core, with res
 
 ## Dashboard
 
-Build results are by default uploaded to: https://my.cdash.org/index.php?project=core
+Build results are uploaded to: https://my.cdash.org/index.php?project=core
 
 ## How It Works
 
 This NixOS configuration sets up three systemd services:
 
 1. **bitcoin-sdk-download** - Downloads the macOS SDK required for cross-compilation (runs once)
-2. **bitcoin-repo-setup** - Clones the Bitcoin repository and configures remotes (runs once)
-3. **bitcoin-ci** - Runs `ctest -S guix.cmake` continuously, rebasing on upstream master before each build
+2. **bitcoin-repo-setup** - Clones the Bitcoin repository (runs once)
+3. **bitcoin-ci** - Runs `ctest -S guix.cmake` continuously, resetting to origin/master before each build
 
 The CI service:
-- Fetches from `upstream` (bitcoin/bitcoin)
-- Rebases on `upstream/master`
+- Fetches and resets to latest `origin/master`
 - Runs `contrib/guix/guix-build` for all platforms
-- Uploads results to CDash
+- Generates build hashes for all output files
+- Uploads results and hashes to CDash
+- Cleans up build artifacts after each run
 - Restarts on failure
 
-### Required Bitcoin Commits
+### CI Scripts
 
-This setup requires two commits not yet in upstream bitcoin/bitcoin:
+The CTest/CDash configuration is self-contained in this repository:
 
-- [CTestConfig.cmake](https://github.com/bitcoin/bitcoin/compare/master...willcl-ark:bitcoin:guix-ci) - CDash configuration
-- [guix.cmake](https://github.com/bitcoin/bitcoin/compare/master...willcl-ark:bitcoin:guix-ci) - CTest build script
+- `scripts/guix.cmake` - CTest dashboard script that orchestrates the build
+- `scripts/CTestConfig.cmake` - CDash submit URL configuration
 
-See the full diff: https://github.com/bitcoin/bitcoin/compare/master...willcl-ark:bitcoin:guix-ci
-
-Currently, the CI clones from `willcl-ark/bitcoin` (branch `guix-ci`) which contains these commits. If the CMakeLists.txt changes are merged upstream, the CI scripts could be moved entirely into this repository.
+These are symlinked to `/data/ci/` and `/data/bitcoin/` respectively on deployment.
 
 ## Deploying to Your Own Server
 
@@ -65,6 +64,11 @@ Currently, the CI clones from `willcl-ark/bitcoin` (branch `guix-ci`) which cont
    ```
 
    Run `lsblk` on the target to identify disk names.
+
+4. **CDash URL** (optional): To use your own CDash instance, update `scripts/CTestConfig.cmake`:
+   ```cmake
+   set(CTEST_SUBMIT_URL https://your-cdash-server/submit.php?project=yourproject)
+   ```
 
 ### Initial Deployment
 
@@ -110,7 +114,8 @@ All build data is stored on a dedicated `/data` partition:
 
 ```
 /data/
-├── bitcoin/    # Git repository
+├── bitcoin/    # bitcoin/bitcoin
+├── ci/         # CI scripts (symlinked from this repo)
 ├── sdk/        # macOS SDK for cross-compilation
 ├── sources/    # Guix depends source cache
 └── cache/      # Guix built package cache
@@ -124,9 +129,15 @@ The CI service sets these environment variables for the Guix build:
 - `SOURCES_PATH=/data/sources` - Depends source cache
 - `BASE_CACHE=/data/cache` - Built package cache
 
-## Future Plans
+## Build Hashes
 
-If the CTest/CDash integration commits are merged into bitcoin/bitcoin upstream, the `guix.cmake` and `CTestConfig.cmake` files could be maintained in this repository instead, making the setup fully self-contained.
+After each successful build, SHA256 hashes of all output files are generated and uploaded to CDash as an artifact. The format matches the standard Guix attestation format:
+
+```
+x86_64
+<sha256sum>  guix-build-<rev>/output/<file>
+...
+```
 
 ## Available Commands
 
