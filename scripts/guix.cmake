@@ -39,18 +39,20 @@ ctest_start("Continuous")
 ctest_build()
 
 # Add guix hashes as a note
-file(MAKE_DIRECTORY "${CTEST_BINARY_DIRECTORY}/Testing/Notes")
+set(HASH_FILE "${CTEST_BINARY_DIRECTORY}/build-hashes.txt")
 execute_process(
   COMMAND bash -c "
     REV=\$(git rev-parse --short=12 HEAD)
     BUILD_DIR=\"guix-build-\${REV}\"
-    HASH_FILE=\"${CTEST_BINARY_DIRECTORY}/Testing/Notes/build-hashes.txt\"
     if [ -d \"\${BUILD_DIR}/output\" ]; then
-      uname -m > \"\${HASH_FILE}\"
-      find \"\${BUILD_DIR}/output/\" -type f -print0 | env LC_ALL=C sort -z | xargs -r0 sha256sum >> \"\${HASH_FILE}\"
+      uname -m > \"${HASH_FILE}\"
+      find \"\${BUILD_DIR}/output/\" -type f -print0 | env LC_ALL=C sort -z | xargs -r0 sha256sum >> \"${HASH_FILE}\"
     fi
   "
   WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
 )
+if(EXISTS "${HASH_FILE}")
+  set(CTEST_NOTES_FILES "${HASH_FILE}")
+endif()
 
 ctest_submit()
