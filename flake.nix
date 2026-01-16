@@ -129,8 +129,9 @@
                   User = "satoshi";
                   WorkingDirectory = "/data/bitcoin";
                   ExecStart = "${pkgs.cmake}/bin/ctest -S /data/ci/guix.cmake -VV";
-                  Restart = "on-failure";
-                  RestartSec = "30s";
+                  ExecStopPost = "${pkgs.bash}/bin/bash -c 'if [ \"$SERVICE_RESULT\" != \"success\" ]; then sleep 300; fi'";
+                  Restart = "always";
+                  RestartSec = "0";
                   ReadWritePaths = [
                     "/data/bitcoin"
                     "/data/sdk"
