@@ -5,6 +5,9 @@ set(CTEST_SOURCE_DIRECTORY "/data/bitcoin")
 set(CTEST_BINARY_DIRECTORY "/data/bitcoin")
 
 # Fetch, reset, then get commit hash for build name
+# We do this manually rather than with ctest_update() as we want to set
+# CTEST_BUILD_NAME dynamically, but ctest_update() must run after
+# ctest_start(), which needs the name set
 execute_process(
   COMMAND git fetch origin
   WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
