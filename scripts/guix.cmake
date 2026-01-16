@@ -35,15 +35,15 @@ ctest_start("Continuous")
 
 ctest_build()
 
-# Uploade guix hashes as an artifact
+# Upload guix hashes as an artifact
 execute_process(
   COMMAND bash -c "
-    REV=$(git rev-parse --short=12 HEAD)
-    BUILD_DIR=\"guix-build-${REV}\"
+    REV=\$(git rev-parse --short=12 HEAD)
+    BUILD_DIR=\"guix-build-\${REV}\"
     HASH_FILE=\"${CTEST_BINARY_DIRECTORY}/Testing/build-hashes.txt\"
-    if [ -d \"${BUILD_DIR}/output\" ]; then
-      uname -m > \"${HASH_FILE}\"
-      find \"${BUILD_DIR}/output/\" -type f -print0 | env LC_ALL=C sort -z | xargs -r0 sha256sum >> \"${HASH_FILE}\"
+    if [ -d \"\${BUILD_DIR}/output\" ]; then
+      uname -m > \"\${HASH_FILE}\"
+      find \"\${BUILD_DIR}/output/\" -type f -print0 | env LC_ALL=C sort -z | xargs -r0 sha256sum >> \"\${HASH_FILE}\"
     fi
   "
   WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
