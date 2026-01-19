@@ -29,12 +29,6 @@
             (
               { pkgs, lib, ... }:
               {
-                boot.loader.grub = {
-                  device = "nodev";
-                  efiSupport = true;
-                  efiInstallAsRemovable = true;
-                };
-
                 powerManagement = {
                   enable = true;
                   cpuFreqGovernor = "performance";
