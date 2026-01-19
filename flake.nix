@@ -18,6 +18,11 @@
       ];
       stateVersion = "25.11";
       ciUser = "satoshi";
+      sdkPath = "/data/sdk";
+      sourcesPath = "/data/sources";
+      cachePath = "/data/cache";
+      bitcoinPath = "/data/bitcoin";
+      ciPath = "/data/ci";
 
       mkBitcoinCiHost =
         { system, hostConfig }:
@@ -66,38 +71,38 @@
                 };
 
                 systemd.tmpfiles.rules = [
-                  "d /data/sdk 0755 ${ciUser} users -"
-                  "d /data/sources 0755 ${ciUser} users -"
-                  "d /data/cache 0755 ${ciUser} users -"
-                  "d /data/bitcoin 0755 ${ciUser} users -"
-                  "d /data/ci 0755 ${ciUser} users -"
-                  "L+ /data/ci/guix.cmake - - - - ${./scripts/guix.cmake}"
-                  "L+ /data/bitcoin/CTestConfig.cmake - - - - ${./scripts/CTestConfig.cmake}"
+                  "d ${sdkPath} 0755 ${ciUser} users -"
+                  "d ${sourcesPath} 0755 ${ciUser} users -"
+                  "d ${cachePath} 0755 ${ciUser} users -"
+                  "d ${bitcoinPath} 0755 ${ciUser} users -"
+                  "d ${ciPath} 0755 ${ciUser} users -"
+                  "L+ ${ciPath}/guix.cmake - - - - ${./scripts/guix.cmake}"
+                  "L+ ${bitcoinPath}/CTestConfig.cmake - - - - ${./scripts/CTestConfig.cmake}"
                 ];
 
                 systemd.services.bitcoin-sdk-download = {
                   description = "Download Bitcoin macOS SDK";
                   wantedBy = [ "multi-user.target" ];
-                  unitConfig.ConditionPathExists = "!/data/sdk/Xcode-15.0-15A240d-extracted-SDK-with-libcxx-headers";
+                  unitConfig.ConditionPathExists = "!${sdkPath}/Xcode-15.0-15A240d-extracted-SDK-with-libcxx-headers";
                   serviceConfig = {
                     Type = "oneshot";
                     RemainAfterExit = true;
                     User = ciUser;
-                    WorkingDirectory = "/data";
-                    ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.curl}/bin/curl -fL https://bitcoincore.org/depends-sources/sdks/Xcode-15.0-15A240d-extracted-SDK-with-libcxx-headers.tar | ${pkgs.gnutar}/bin/tar -xf - -C /data/sdk'";
+                    WorkingDirectory = sdkPath;
+                    ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.curl}/bin/curl -fL https://bitcoincore.org/depends-sources/sdks/Xcode-15.0-15A240d-extracted-SDK-with-libcxx-headers.tar | ${pkgs.gnutar}/bin/tar -xf - -C ${sdkPath}'";
                   };
                 };
 
                 systemd.services.bitcoin-repo-setup = {
                   description = "Clone Bitcoin repository";
                   wantedBy = [ "multi-user.target" ];
-                  unitConfig.ConditionPathExists = "!/data/bitcoin/.git";
+                  unitConfig.ConditionPathExists = "!${bitcoinPath}/.git";
                   serviceConfig = {
                     Type = "oneshot";
                     RemainAfterExit = true;
                     User = ciUser;
-                    WorkingDirectory = "/data";
-                    ExecStart = "${pkgs.bash}/bin/bash -c 'tmpdir=\$(mktemp -d) && ${pkgs.git}/bin/git clone https://github.com/bitcoin/bitcoin.git \"\$tmpdir\" && mv \"\$tmpdir\"/.git /data/bitcoin/ && mv \"\$tmpdir\"/* /data/bitcoin/ 2>/dev/null; rm -rf \"\$tmpdir\"'";
+                    WorkingDirectory = bitcoinPath;
+                    ExecStart = "${pkgs.bash}/bin/bash -c 'tmpdir=\$(mktemp -d) && ${pkgs.git}/bin/git clone https://github.com/bitcoin/bitcoin.git \"\$tmpdir\" && mv \"\$tmpdir\"/.git ${bitcoinPath}/ && mv \"\$tmpdir\"/* ${bitcoinPath}/ 2>/dev/null; rm -rf \"\$tmpdir\"'";
                   };
                 };
 
@@ -114,25 +119,25 @@
                     "bitcoin-repo-setup.service"
                   ];
                   environment = {
-                    SDK_PATH = "/data/sdk";
-                    SOURCES_PATH = "/data/sources";
-                    BASE_CACHE = "/data/cache";
+                    SDK_PATH = sdkPath;
+                    SOURCES_PATH = sourcesPath;
+                    BASE_CACHE = cachePath;
                     PATH = lib.mkForce "/run/current-system/sw/bin:/run/wrappers/bin";
                   };
                   serviceConfig = {
                     Type = "simple";
                     User = ciUser;
-                    WorkingDirectory = "/data/bitcoin";
-                    ExecStartPre = "+${pkgs.bash}/bin/bash -c 'chown -R ${ciUser}:users /data/bitcoin /data/sdk /data/sources /data/cache'";
-                    ExecStart = "${pkgs.cmake}/bin/ctest -S /data/ci/guix.cmake -VV";
+                    WorkingDirectory = bitcoinPath;
+                    ExecStartPre = "+${pkgs.bash}/bin/bash -c 'chown -R ${ciUser}:users ${bitcoinPath} ${sdkPath} ${sourcesPath} ${cachePath}'";
+                    ExecStart = "${pkgs.cmake}/bin/ctest -S ${ciPath}/guix.cmake -VV";
                     ExecStopPost = "${pkgs.bash}/bin/bash -c 'if [ \"$SERVICE_RESULT\" != \"success\" ]; then sleep 300; fi'";
                     Restart = "always";
                     RestartSec = "0";
                     ReadWritePaths = [
-                      "/data/bitcoin"
-                      "/data/sdk"
-                      "/data/sources"
-                      "/data/cache"
+                      bitcoinPath
+                      sdkPath
+                      sourcesPath
+                      cachePath
                     ];
                   };
                 };
@@ -223,7 +228,7 @@
                       settings = {
                         user.name = "Satoshi Nakamoto";
                         user.email = "satoshi@bitcoin.org";
-                        safe.directory = "/data/bitcoin";
+                        safe.directory = bitcoinPath;
                       };
                     };
 
