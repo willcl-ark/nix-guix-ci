@@ -17,6 +17,7 @@
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH988C5DbEPHfoCphoW23MWq9M6fmA4UTXREiZU0J7n0 will.hetzner@temp.com"
       ];
       stateVersion = "25.11";
+      ciUser = "satoshi";
 
       mkBitcoinCiHost =
         { system, hostConfig }:
@@ -65,11 +66,11 @@
                 };
 
                 systemd.tmpfiles.rules = [
-                  "d /data/sdk 0755 satoshi users -"
-                  "d /data/sources 0755 satoshi users -"
-                  "d /data/cache 0755 satoshi users -"
-                  "d /data/bitcoin 0755 satoshi users -"
-                  "d /data/ci 0755 satoshi users -"
+                  "d /data/sdk 0755 ${ciUser} users -"
+                  "d /data/sources 0755 ${ciUser} users -"
+                  "d /data/cache 0755 ${ciUser} users -"
+                  "d /data/bitcoin 0755 ${ciUser} users -"
+                  "d /data/ci 0755 ${ciUser} users -"
                   "L+ /data/ci/guix.cmake - - - - ${./scripts/guix.cmake}"
                   "L+ /data/bitcoin/CTestConfig.cmake - - - - ${./scripts/CTestConfig.cmake}"
                 ];
@@ -81,7 +82,7 @@
                   serviceConfig = {
                     Type = "oneshot";
                     RemainAfterExit = true;
-                    User = "satoshi";
+                    User = ciUser;
                     WorkingDirectory = "/data";
                     ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.curl}/bin/curl -fL https://bitcoincore.org/depends-sources/sdks/Xcode-15.0-15A240d-extracted-SDK-with-libcxx-headers.tar | ${pkgs.gnutar}/bin/tar -xf - -C /data/sdk'";
                   };
@@ -94,7 +95,7 @@
                   serviceConfig = {
                     Type = "oneshot";
                     RemainAfterExit = true;
-                    User = "satoshi";
+                    User = ciUser;
                     WorkingDirectory = "/data";
                     ExecStart = "${pkgs.bash}/bin/bash -c 'tmpdir=\$(mktemp -d) && ${pkgs.git}/bin/git clone https://github.com/bitcoin/bitcoin.git \"\$tmpdir\" && mv \"\$tmpdir\"/.git /data/bitcoin/ && mv \"\$tmpdir\"/* /data/bitcoin/ 2>/dev/null; rm -rf \"\$tmpdir\"'";
                   };
@@ -120,9 +121,9 @@
                   };
                   serviceConfig = {
                     Type = "simple";
-                    User = "satoshi";
+                    User = ciUser;
                     WorkingDirectory = "/data/bitcoin";
-                    ExecStartPre = "+${pkgs.bash}/bin/bash -c 'chown -R satoshi:users /data/bitcoin /data/sdk /data/sources /data/cache'";
+                    ExecStartPre = "+${pkgs.bash}/bin/bash -c 'chown -R ${ciUser}:users /data/bitcoin /data/sdk /data/sources /data/cache'";
                     ExecStart = "${pkgs.cmake}/bin/ctest -S /data/ci/guix.cmake -VV";
                     ExecStopPost = "${pkgs.bash}/bin/bash -c 'if [ \"$SERVICE_RESULT\" != \"success\" ]; then sleep 300; fi'";
                     Restart = "always";
@@ -190,14 +191,14 @@
 
                 users.users.root.openssh.authorizedKeys.keys = ssh_keys;
 
-                users.users.satoshi = {
+                users.users.${ciUser} = {
                   isNormalUser = true;
                   openssh.authorizedKeys.keys = ssh_keys;
                   extraGroups = [ "wheel" ];
-                  home = "/home/satoshi";
+                  home = "/home/${ciUser}";
                 };
 
-                home-manager.users.satoshi = {
+                home-manager.users.${ciUser} = {
                   home.packages = with pkgs; [
                     direnv
                     fzf
