@@ -24,7 +24,12 @@ dry-run type=default_host:
 # Deploy configuration to a machine
 [group('live')]
 deploy type=default_host host=default_host:
-    nix-shell -p nixos-anywhere --command "nixos-anywhere --flake .#{{type}} --target-host {{host}}"
+    nix-shell -p nixos-anywhere --run "nixos-anywhere --flake .#{{type}} --target-host {{host}}"
+
+# Deploy configuration, building on the remote machine (for cross-arch)
+[group('live')]
+deploy-remote type=default_host host=default_host:
+    nix-shell -p nixos-anywhere --run "nixos-anywhere --flake .#{{type}} --target-host {{host}} --build-on-remote"
 
 # Copy flake to remote for local building
 [group('live')]
