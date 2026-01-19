@@ -96,7 +96,7 @@
                     RemainAfterExit = true;
                     User = "satoshi";
                     WorkingDirectory = "/data";
-                    ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.git}/bin/git clone https://github.com/bitcoin/bitcoin.git /data/bitcoin'";
+                    ExecStart = "${pkgs.bash}/bin/bash -c 'tmpdir=\$(mktemp -d) && ${pkgs.git}/bin/git clone https://github.com/bitcoin/bitcoin.git \"\$tmpdir\" && mv \"\$tmpdir\"/.git /data/bitcoin/ && mv \"\$tmpdir\"/* /data/bitcoin/ 2>/dev/null; rm -rf \"\$tmpdir\"'";
                   };
                 };
 
