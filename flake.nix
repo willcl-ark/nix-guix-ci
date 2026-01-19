@@ -122,6 +122,7 @@
                     Type = "simple";
                     User = "satoshi";
                     WorkingDirectory = "/data/bitcoin";
+                    ExecStartPre = "+${pkgs.bash}/bin/bash -c 'chown -R satoshi:users /data/bitcoin /data/sdk /data/sources /data/cache'";
                     ExecStart = "${pkgs.cmake}/bin/ctest -S /data/ci/guix.cmake -VV";
                     ExecStopPost = "${pkgs.bash}/bin/bash -c 'if [ \"$SERVICE_RESULT\" != \"success\" ]; then sleep 300; fi'";
                     Restart = "always";
