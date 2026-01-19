@@ -31,6 +31,15 @@ The CTest/CDash configuration is self-contained in this repository:
 
 These are symlinked to `/data/ci/` and `/data/bitcoin/` respectively on deployment.
 
+## Hosts
+
+Two CI runners are configured:
+
+| Host | Arch | SSH Config | Disk Layout |
+|------|------|------------|-------------|
+| `guix-ci` | x86_64 | `guix-ci` | 2x NVMe (root LVM + /data) |
+| `guix-ci-arm64` | aarch64 | `guix-ci-arm64` | HC_Volume (ESP) + QEMU HARDDISK (root + /data) |
+
 ## Deploying to Your Own Server
 
 ### Prerequisites
@@ -57,13 +66,12 @@ These are symlinked to `/data/ci/` and `/data/bitcoin/` respectively on deployme
        IdentityFile ~/.ssh/your-key
    ```
 
-3. **Disk Configuration**: Update disk device paths in `hosts/guix-ci/disk-config.nix` to match your server:
+3. **Disk Configuration**: Update disk device paths in `hosts/<hostname>/disk-config.nix` to match your server. Use stable `/dev/disk/by-id/` paths when possible:
    ```nix
-   disk.disk1.device = lib.mkDefault "/dev/sda";  # or /dev/nvme0n1, etc.
-   disk.disk2.device = lib.mkDefault "/dev/sdb";  # for /data partition
+   disk.disk1.device = lib.mkDefault "/dev/disk/by-id/scsi-...";
    ```
 
-   Run `lsblk` on the target to identify disk names.
+   Run `ls -la /dev/disk/by-id/` and `lsblk` on the target to identify disks.
 
 4. **CDash URL** (optional): To use your own CDash instance, update `scripts/CTestConfig.cmake`:
    ```cmake
@@ -72,11 +80,15 @@ These are symlinked to `/data/ci/` and `/data/bitcoin/` respectively on deployme
 
 ### Initial Deployment
 
-1. Boot your server into a NixOS installer ISO or rescue system
-2. Ensure SSH access works: `ssh guix-ci echo "connected"`
+1. Boot your server into a NixOS installer ISO or rescue system (or use existing OS with SSH)
+2. Ensure SSH access works: `ssh <host> echo "connected"`
 3. Deploy:
    ```bash
-   just deploy
+   # Same architecture (e.g., x86_64 -> x86_64)
+   just deploy guix-ci guix-ci
+
+   # Cross-architecture (e.g., x86_64 -> aarch64) - builds on remote
+   just deploy-remote guix-ci-arm64 root@<ip>
    ```
 
 This partitions disks and installs NixOS with the full CI configuration.
@@ -86,21 +98,22 @@ This partitions disks and installs NixOS with the full CI configuration.
 Syncing first performs the build on the remote, which saves bandwidth/time.
 
 ```bash
-just sync-rebuild
+just sync-rebuild guix-ci guix-ci           # x86_64 host
+just sync-rebuild guix-ci-arm64 guix-ci-arm64  # arm64 host
 ```
 
 Or separately:
 ```bash
-just sync      # copy config to remote
-just rebuild   # rebuild on remote
+just sync guix-ci           # copy config to remote
+just rebuild guix-ci guix-ci  # rebuild on remote
 ```
 
 ### Monitoring
 
 ```bash
-just logs       # Follow CI logs
-just status     # Check CI service status
-just status-all # Check all bitcoin-* services
+just logs guix-ci           # Follow CI logs
+just status guix-ci         # Check CI service status
+just status-all guix-ci     # Check all bitcoin-* services
 ```
 
 ## Data Layout
@@ -136,16 +149,19 @@ x86_64
 
 ## Available Commands
 
+Commands take optional `type` (flake config) and `host` (SSH target) parameters, defaulting to `guix-ci`:
+
 ```bash
-just              # List all commands
-just build        # Build configuration locally
-just build-vm     # Build VM for testing
-just dry-run      # Show what would change
-just deploy       # Initial deployment to fresh server
-just sync         # Copy config to remote
-just rebuild      # Rebuild on remote
-just sync-rebuild # Sync and rebuild in one step
-just logs         # Follow CI logs
-just status       # Check CI service status
-just status-all   # Check all bitcoin-* services
+just                                    # List all commands
+just build [type]                       # Build configuration locally
+just build-vm [type]                    # Build VM for testing
+just dry-run [type]                     # Show what would change
+just deploy [type] [host]               # Initial deployment (same arch)
+just deploy-remote [type] [host]        # Initial deployment (cross-arch, builds on remote)
+just sync [host]                        # Copy config to remote
+just rebuild [type] [host]              # Rebuild on remote
+just sync-rebuild [type] [host]         # Sync and rebuild in one step
+just logs [host]                        # Follow CI logs
+just status [host]                      # Check CI service status
+just status-all [host]                  # Check all bitcoin-* services
 ```
