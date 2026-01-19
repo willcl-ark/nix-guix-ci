@@ -8,8 +8,8 @@ execute_process(
 string(REPLACE " " "_" CPU_MODEL "${CPU_MODEL}")
 
 set(CTEST_SITE "${OS_PLATFORM}-nixos-${CPU_MODEL}")
-set(CTEST_SOURCE_DIRECTORY "/data/bitcoin")
-set(CTEST_BINARY_DIRECTORY "/data/bitcoin")
+set(CTEST_SOURCE_DIRECTORY $ENV{BITCOIN_PATH})
+set(CTEST_BINARY_DIRECTORY $ENV{BITCOIN_PATH})
 
 # We fetch manually rather than with ctest_update() as we want to set
 # CTEST_BUILD_NAME dynamically, but ctest_update() must run after

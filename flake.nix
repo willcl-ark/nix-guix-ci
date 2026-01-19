@@ -119,6 +119,7 @@
                     "bitcoin-repo-setup.service"
                   ];
                   environment = {
+                    BITCOIN_PATH = bitcoinPath;
                     SDK_PATH = sdkPath;
                     SOURCES_PATH = sourcesPath;
                     BASE_CACHE = cachePath;
