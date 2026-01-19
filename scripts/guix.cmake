@@ -1,6 +1,13 @@
 cmake_host_system_information(RESULT OS_PLATFORM QUERY OS_PLATFORM)
 
-set(CTEST_SITE "${OS_PLATFORM}-nixos-ryzen5")
+execute_process(
+  COMMAND bash -c "lscpu | grep 'Model name' | sed 's/.*: *//'"
+  OUTPUT_VARIABLE CPU_MODEL
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+string(REPLACE " " "_" CPU_MODEL "${CPU_MODEL}")
+
+set(CTEST_SITE "${OS_PLATFORM}-nixos-${CPU_MODEL}")
 set(CTEST_SOURCE_DIRECTORY "/data/bitcoin")
 set(CTEST_BINARY_DIRECTORY "/data/bitcoin")
 
