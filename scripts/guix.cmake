@@ -44,7 +44,7 @@ execute_process(
   WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
 )
 string(SUBSTRING "${NEW_HEAD}" 0 12 GIT_REV)
-set(CTEST_BUILD_NAME "Guix-${GIT_REV}")
+set(CTEST_BUILD_NAME "guix-${GIT_REV}")
 
 set(CTEST_BUILD_COMMAND "bash -c \"unset SOURCE_DATE_EPOCH && ${CTEST_SOURCE_DIRECTORY}/contrib/guix/guix-build\"")
 
@@ -55,7 +55,7 @@ execute_process(
   WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
 )
 
-ctest_start("Continuous")
+ctest_start("Guix")
 ctest_build()
 
 # Add guix hashes as a note
