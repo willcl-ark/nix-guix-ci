@@ -46,7 +46,7 @@ execute_process(
   WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
 )
 
-ctest_start("Guix")
+ctest_start(Continuous TRACK "Guix")
 ctest_build()
 
 # Add guix hashes as a note
