@@ -1,13 +1,4 @@
-cmake_host_system_information(RESULT OS_PLATFORM QUERY OS_PLATFORM)
-
-execute_process(
-  COMMAND bash -c "lscpu | grep 'Model name' | sed 's/.*: *//'"
-  OUTPUT_VARIABLE CPU_MODEL
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-string(REPLACE " " "_" CPU_MODEL "${CPU_MODEL}")
-
-set(CTEST_SITE "${OS_PLATFORM}-nixos-${CPU_MODEL}")
+set(CTEST_SITE $ENV{SITE_NAME})
 set(CTEST_SOURCE_DIRECTORY $ENV{BITCOIN_PATH})
 set(CTEST_BINARY_DIRECTORY $ENV{BITCOIN_PATH})
 

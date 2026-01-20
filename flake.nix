@@ -25,7 +25,7 @@
       ciPath = "/data/ci";
 
       mkBitcoinCiHost =
-        { system, hostConfig }:
+        { system, hostConfig, siteName }:
         nixpkgs.lib.nixosSystem {
           inherit system;
           modules = [
@@ -119,6 +119,7 @@
                     "bitcoin-repo-setup.service"
                   ];
                   environment = {
+                    SITE_NAME = siteName;
                     BITCOIN_PATH = bitcoinPath;
                     SDK_PATH = sdkPath;
                     SOURCES_PATH = sourcesPath;
@@ -276,11 +277,13 @@
       nixosConfigurations.guix-ci = mkBitcoinCiHost {
         system = "x86_64-linux";
         hostConfig = ./hosts/guix-ci/configuration.nix;
+        siteName = "hetzner-2776510-x86_64";
       };
 
       nixosConfigurations.guix-ci-arm64 = mkBitcoinCiHost {
         system = "aarch64-linux";
         hostConfig = ./hosts/guix-ci-arm64/configuration.nix;
+        siteName = "prevps-10844-aarch64";
       };
     };
 }
