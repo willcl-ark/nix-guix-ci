@@ -14,7 +14,7 @@ while(TRUE)
     )
 
   # Start a new run
-  ctest_start(Continuous TRACK "Guix")
+ctest_start(Continuous GROUP Guix)
   ctest_update(RETURN_VALUE UPDATE_COUNT)
   if(UPDATE_COUNT GREATER 0)
     # If we detect a new update, break out of the loop and run the build
