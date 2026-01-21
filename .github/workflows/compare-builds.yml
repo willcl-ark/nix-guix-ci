@@ -16,4 +16,6 @@ jobs:
           python-version: '3.13'
 
       - name: Compare builds
-        run: python scripts/compare_builds.py --verbose
+        run: python scripts/compare_builds.py --verbose --create-issue
+        env:
+          GH_TOKEN: ${{ github.token }}

@@ -3,6 +3,8 @@
 
 import argparse
 import json
+import os
+import subprocess
 import sys
 import urllib.request
 from collections import defaultdict
@@ -63,6 +65,43 @@ def group_builds_by_name(builds):
     return groups
 
 
+def create_github_issue(build_a, build_b, arch_a, arch_b, diff):
+    title = f"Reproducibility failure: {build_a['name']}"
+    body = f"""## Reproducibility Failure
+
+Build hashes do not match between architectures for `{build_a['name']}`.
+
+| Architecture | Build ID | CDash Link |
+|--------------|----------|------------|
+| {arch_a} | {build_a['id']} | https://my.cdash.org/builds/{build_a['id']} |
+| {arch_b} | {build_b['id']} | https://my.cdash.org/builds/{build_b['id']} |
+
+### Diff
+```
+{diff}
+```
+"""
+    # Check for existing open issue with same title
+    result = subprocess.run(
+        ["gh", "issue", "list", "--state", "open", "--search", f'"{title}" in:title'],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode == 0 and title in result.stdout:
+        print(f"  Issue already exists for '{build_a['name']}', skipping")
+        return
+
+    result = subprocess.run(
+        ["gh", "issue", "create", "--title", title, "--body", body, "--label", "reproducibility"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode == 0:
+        print(f"  Created issue: {result.stdout.strip()}")
+    else:
+        print(f"  Failed to create issue: {result.stderr}", file=sys.stderr)
+
+
 def compare_notes(notes_a, notes_b):
     lines_a = notes_a.strip().split("\n")
     lines_b = notes_b.strip().split("\n")
@@ -97,6 +136,11 @@ def main():
         type=int,
         default=48,
         help="Only compare builds from the last N hours (default: 48)",
+    )
+    parser.add_argument(
+        "--create-issue",
+        action="store_true",
+        help="Create GitHub issue on mismatch (requires gh CLI and GITHUB_TOKEN)",
     )
     args = parser.parse_args()
 
@@ -154,7 +198,9 @@ def main():
                 )
                 if diff:
                     print(diff)
-                failures.append((build_a, build_b, diff))
+                failures.append((build_a, build_b, arch_a, arch_b, diff))
+                if args.create_issue:
+                    create_github_issue(build_a, build_b, arch_a, arch_b, diff)
 
     print()
     if not comparisons:
@@ -163,7 +209,7 @@ def main():
 
     if failures:
         print(f"FAILURE: {len(failures)} comparison(s) failed")
-        for build_a, build_b, _ in failures:
+        for build_a, build_b, *_ in failures:
             print(f"  - https://my.cdash.org/builds/{build_a['id']}")
             print(f"  - https://my.cdash.org/builds/{build_b['id']}")
         return 1
