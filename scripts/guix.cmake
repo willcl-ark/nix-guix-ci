@@ -5,31 +5,39 @@ set(CTEST_BUILD_NAME "guix")
 set(CTEST_GIT_COMMAND "git")
 set(CTEST_BUILD_COMMAND "bash -c \"unset SOURCE_DATE_EPOCH && ${CTEST_SOURCE_DIRECTORY}/contrib/guix/guix-build\"")
 
+execute_process(
+  COMMAND git rev-parse HEAD
+  WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
+  OUTPUT_VARIABLE OLD_HEAD
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 # Poll until a new commit is available
 while(TRUE)
-  # Cleanup first
   execute_process(
-    COMMAND git clean -dfx --exclude=CTestConfig.cmake
+    COMMAND git fetch origin
     WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
-    )
-
-  # Start a new run
-ctest_start(Continuous GROUP Guix)
-  ctest_update(RETURN_VALUE UPDATE_COUNT)
-  if(UPDATE_COUNT GREATER 0)
-    # If we detect a new update, break out of the loop and run the build
+  )
+  execute_process(
+    COMMAND git rev-parse origin/master
+    WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
+    OUTPUT_VARIABLE NEW_HEAD
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  if(NOT OLD_HEAD STREQUAL NEW_HEAD)
     break()
   endif()
-  execute_process(
-    COMMAND git rev-parse HEAD
-    WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
-    OUTPUT_VARIABLE CURRENT_HEAD
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-  message("No new commits (at ${CURRENT_HEAD}), sleeping 60s")
+  message("No new commits (at ${OLD_HEAD}), sleeping 60s")
   execute_process(COMMAND sleep 60)
 endwhile()
 
+execute_process(
+  COMMAND git clean -dfx --exclude=CTestConfig.cmake
+  WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
+)
+
+ctest_start(Continuous GROUP Guix)
+ctest_update()
 ctest_build()
 
 # Add guix hashes as a note
