@@ -1,52 +1,34 @@
 set(CTEST_SITE $ENV{SITE_NAME})
 set(CTEST_SOURCE_DIRECTORY $ENV{BITCOIN_PATH})
 set(CTEST_BINARY_DIRECTORY $ENV{BITCOIN_PATH})
+set(CTEST_BUILD_NAME "guix")
+set(CTEST_BUILD_COMMAND "bash -c \"unset SOURCE_DATE_EPOCH && ${CTEST_SOURCE_DIRECTORY}/contrib/guix/guix-build\"")
 
-# We fetch manually rather than with ctest_update() as we want to set
-# CTEST_BUILD_NAME dynamically, but ctest_update() must run after
-# ctest_start(), which needs the name set
-execute_process(
-  COMMAND git rev-parse HEAD
-  WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
-  OUTPUT_VARIABLE OLD_HEAD
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
 # Poll until a new commit is available
 while(TRUE)
+  # Cleanup first
   execute_process(
-    COMMAND git fetch origin
+    COMMAND git clean -dfx --exclude=CTestConfig.cmake
     WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
-  )
-  execute_process(
-    COMMAND git rev-parse origin/master
-    WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
-    OUTPUT_VARIABLE NEW_HEAD
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-  if(NOT OLD_HEAD STREQUAL NEW_HEAD)
+    )
+
+  # Start a new run
+  ctest_start(Continuous TRACK "Guix")
+  ctest_update(RETURN_VALUE UPDATE_COUNT)
+  if(UPDATE_COUNT GREATER 0)
+    # If we detect a new update, break out of the loop and run the build
     break()
   endif()
-  message("No new commits (at ${OLD_HEAD}), sleeping 60s")
+  execute_process(
+    COMMAND git rev-parse HEAD
+    WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
+    OUTPUT_VARIABLE CURRENT_HEAD
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+  message("No new commits (at ${CURRENT_HEAD}), sleeping 60s")
   execute_process(COMMAND sleep 60)
 endwhile()
 
-execute_process(
-  COMMAND git reset --hard ${NEW_HEAD}
-  WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
-)
-string(SUBSTRING "${NEW_HEAD}" 0 12 GIT_REV)
-set(CTEST_BUILD_NAME "guix-${GIT_REV}")
-
-set(CTEST_BUILD_COMMAND "bash -c \"unset SOURCE_DATE_EPOCH && ${CTEST_SOURCE_DIRECTORY}/contrib/guix/guix-build\"")
-
-file(REMOVE_RECURSE "${CTEST_BINARY_DIRECTORY}/Testing")
-
-execute_process(
-  COMMAND git clean -dfx --exclude=CTestConfig.cmake
-  WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
-)
-
-ctest_start(Continuous TRACK "Guix")
 ctest_build()
 
 # Add guix hashes as a note
