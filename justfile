@@ -34,7 +34,7 @@ deploy-remote type=default_host host=default_host:
 # Copy flake to remote for local building
 [group('live')]
 sync host=default_host:
-    rsync -av --exclude=result* . {{host}}:/etc/nixos-config/
+    rsync -av --exclude=result* --exclude=.git . {{host}}:/etc/nixos-config/
     ssh {{host}} "chown -R root:root /etc/nixos-config"
 
 # Rebuild configuration on remote machine
@@ -45,7 +45,7 @@ rebuild type=default_host host=default_host:
 # Sync and rebuild on remote machine
 [group('live')]
 sync-rebuild type=default_host host=default_host:
-    rsync -av --exclude=result* . {{host}}:/etc/nixos-config/
+    rsync -av --exclude=result* --exclude=.git . {{host}}:/etc/nixos-config/
     ssh {{host}} "chown -R root:root /etc/nixos-config && nixos-rebuild switch --flake /etc/nixos-config#{{type}}"
 
 # Follow CI logs
