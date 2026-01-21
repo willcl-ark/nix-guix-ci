@@ -2,6 +2,7 @@ set(CTEST_SITE $ENV{SITE_NAME})
 set(CTEST_SOURCE_DIRECTORY $ENV{BITCOIN_PATH})
 set(CTEST_BINARY_DIRECTORY $ENV{BITCOIN_PATH})
 set(CTEST_BUILD_NAME "guix")
+set(CTEST_GIT_COMMAND "git")
 set(CTEST_BUILD_COMMAND "bash -c \"unset SOURCE_DATE_EPOCH && ${CTEST_SOURCE_DIRECTORY}/contrib/guix/guix-build\"")
 
 # Poll until a new commit is available
