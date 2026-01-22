@@ -36,7 +36,7 @@ execute_process(
   WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
 )
 
-ctest_start(Continuous GROUP Guix)
+ctest_start(Continuous)
 ctest_update()
 ctest_build()
 
