@@ -277,13 +277,13 @@
       nixosConfigurations.guix-ci = mkBitcoinCiHost {
         system = "x86_64-linux";
         hostConfig = ./hosts/guix-ci/configuration.nix;
-        siteName = "hetzner-2776510-x86_64";
+        siteName = "hetzner-2776510";
       };
 
       nixosConfigurations.guix-ci-arm64 = mkBitcoinCiHost {
         system = "aarch64-linux";
         hostConfig = ./hosts/guix-ci-arm64/configuration.nix;
-        siteName = "prevps-10844-aarch64";
+        siteName = "prevps-10844";
       };
     };
 }
