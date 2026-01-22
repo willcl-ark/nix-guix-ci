@@ -157,32 +157,32 @@
                   PAGER = "less";
                 };
 
-                environment.systemPackages = with pkgs; [
-                  bash
-                  bat
-                  cmake
-                  coreutils
-                  curl
-                  docker
-                  eza
-                  fd
-                  findutils
-                  git
-                  gnugrep
-                  gnumake
-                  gnused
-                  gnutar
-                  htop
-                  jq
-                  just
-                  magic-wormhole
-                  mosh
-                  neovim
-                  podman
-                  python3
-                  ripgrep
-                  time
-                  tmux
+                environment.systemPackages = [
+                  pkgs.bash
+                  pkgs.bat
+                  pkgs.cmake
+                  pkgs.coreutils
+                  pkgs.curl
+                  pkgs.docker
+                  pkgs.eza
+                  pkgs.fd
+                  pkgs.findutils
+                  pkgs.git
+                  pkgs.gnugrep
+                  pkgs.gnumake
+                  pkgs.gnused
+                  pkgs.gnutar
+                  pkgs.htop
+                  pkgs.jq
+                  pkgs.just
+                  pkgs.magic-wormhole
+                  pkgs.mosh
+                  pkgs.neovim
+                  pkgs.podman
+                  pkgs.python3
+                  pkgs.ripgrep
+                  pkgs.time
+                  pkgs.tmux
                 ];
 
                 networking.firewall = {
