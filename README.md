@@ -6,6 +6,12 @@ NixOS configuration for running continuous Guix builds of Bitcoin Core, with res
 
 Build results are uploaded to: https://my.cdash.org/index.php?project=core
 
+## Cross-checking guix builds
+
+The GHA workflow in this repo runs periodically and cross-checks guix hashes (via the ctest "notes") from guix builds with matching revisions.
+
+It will open a new issue in this repo if hashes of a revision do not match.
+
 ## How It Works
 
 This NixOS configuration sets up three systemd services:

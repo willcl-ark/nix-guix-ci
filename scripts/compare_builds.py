@@ -3,7 +3,6 @@
 
 import argparse
 import json
-import os
 import subprocess
 import sys
 import urllib.request
@@ -13,12 +12,18 @@ from itertools import combinations
 
 CDASH_API = "https://my.cdash.org/api/v1"
 PROJECT = "core"
-BUILD_GROUP = "Guix"
+BUILD_GROUP = "Continuous"
 
 
 def fetch_json(url):
     with urllib.request.urlopen(url, timeout=30) as resp:
         return json.loads(resp.read().decode())
+
+
+def fetch_revision(build_id):
+    url = f"{CDASH_API}/viewUpdate.php?buildid={build_id}"
+    data = fetch_json(url)
+    return data.get("update", {}).get("revision", "")
 
 
 def fetch_builds(hours=None):
@@ -41,11 +46,14 @@ def fetch_builds(hours=None):
             builds.append(
                 {
                     "id": build["id"],
-                    "name": build.get("buildname", ""),
                     "site": build.get("site", ""),
                     "builddatefull": build.get("builddatefull", 0),
                 }
             )
+
+    for build in builds:
+        build["revision"] = fetch_revision(build["id"])
+
     return builds
 
 
@@ -58,23 +66,24 @@ def fetch_notes(build_id):
     return notes[0].get("text", "")
 
 
-def group_builds_by_name(builds):
+def group_builds_by_revision(builds):
     groups = defaultdict(list)
     for build in builds:
-        groups[build["name"]].append(build)
+        groups[build["revision"]].append(build)
     return groups
 
 
 def create_github_issue(build_a, build_b, arch_a, arch_b, diff):
-    title = f"Reproducibility failure: {build_a['name']}"
+    revision = build_a["revision"][:12]
+    title = f"Reproducibility failure: {revision}"
     body = f"""## Reproducibility Failure
 
-Build hashes do not match between architectures for `{build_a['name']}`.
+Build hashes do not match between architectures for revision `{revision}`.
 
 | Architecture | Build ID | CDash Link |
 |--------------|----------|------------|
-| {arch_a} | {build_a['id']} | https://my.cdash.org/builds/{build_a['id']} |
-| {arch_b} | {build_b['id']} | https://my.cdash.org/builds/{build_b['id']} |
+| {arch_a} | {build_a["id"]} | https://my.cdash.org/builds/{build_a["id"]} |
+| {arch_b} | {build_b["id"]} | https://my.cdash.org/builds/{build_b["id"]} |
 
 ### Diff
 ```
@@ -88,11 +97,21 @@ Build hashes do not match between architectures for `{build_a['name']}`.
         text=True,
     )
     if result.returncode == 0 and title in result.stdout:
-        print(f"  Issue already exists for '{build_a['name']}', skipping")
+        print(f"  Issue already exists for revision {revision}, skipping")
         return
 
     result = subprocess.run(
-        ["gh", "issue", "create", "--title", title, "--body", body, "--label", "reproducibility"],
+        [
+            "gh",
+            "issue",
+            "create",
+            "--title",
+            title,
+            "--body",
+            body,
+            "--label",
+            "reproducibility",
+        ],
         capture_output=True,
         text=True,
     )
@@ -153,22 +172,22 @@ def main():
         return 2
 
     if not builds:
-        print("No builds found in Guix group.")
+        print(f"No builds found in {BUILD_GROUP} group.")
         return 0
 
-    groups = group_builds_by_name(builds)
-    print(f"Found {len(builds)} builds in {len(groups)} group(s)")
+    groups = group_builds_by_revision(builds)
+    print(f"Found {len(builds)} builds across {len(groups)} revision(s)")
 
     failures = []
     comparisons = 0
 
-    for name, group_builds in sorted(groups.items()):
+    for revision, group_builds in sorted(groups.items()):
         if len(group_builds) < 2:
             if args.verbose:
-                print(f"  '{name}': only {len(group_builds)} build(s), skipping")
+                print(f"  {revision[:12]}: only {len(group_builds)} build(s), skipping")
             continue
 
-        print(f"\nComparing builds for '{name}':")
+        print(f"\nComparing builds for revision {revision[:12]}:")
 
         for build_a, build_b in combinations(group_builds, 2):
             comparisons += 1
@@ -204,7 +223,7 @@ def main():
 
     print()
     if not comparisons:
-        print("No comparisons performed (need 2+ builds with same name).")
+        print("No comparisons performed (need 2+ builds with same revision).")
         return 0
 
     if failures:
