@@ -1,0 +1,16 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "valgrind-fuzz",
+      "generator": "Ninja",
+      "binaryDir": "/data/build",
+      "cacheVariables": {
+        "BUILD_FOR_FUZZING": "ON",
+        "BUILD_FUZZ_BINARY": "ON",
+        "WERROR": "ON",
+        "CMAKE_CXX_FLAGS": "-Wno-error=array-bounds"
+      }
+    }
+  ]
+}
