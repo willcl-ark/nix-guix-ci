@@ -78,6 +78,7 @@
                   "d ${ciPath} 0755 ${ciUser} users -"
                   "L+ ${ciPath}/guix.cmake - - - - ${./scripts/guix.cmake}"
                   "L+ ${bitcoinPath}/CTestConfig.cmake - - - - ${./scripts/CTestConfig.cmake}"
+                  "L+ ${bitcoinPath}/CTestCustom.cmake - - - - ${./scripts/CTestCustom.cmake}"
                 ];
 
                 systemd.services.bitcoin-sdk-download = {

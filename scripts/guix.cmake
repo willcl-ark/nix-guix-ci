@@ -32,13 +32,9 @@ while(TRUE)
 endwhile()
 
 execute_process(
-  COMMAND git clean -dfx --exclude=CTestConfig.cmake
+  COMMAND git clean -dfx --exclude=CTestConfig.cmake --exclude=CTestCustom.cmake
   WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
 )
-
-file(WRITE "${CTEST_BINARY_DIRECTORY}/CTestCustom.cmake" "
-set(CTEST_CUSTOM_ERROR_MATCH \"\${CTEST_CUSTOM_ERROR_MATCH}\" \"SDK does not exist\")
-")
 
 ctest_start(Continuous)
 ctest_update()
