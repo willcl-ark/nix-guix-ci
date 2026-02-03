@@ -1,6 +1,6 @@
-# Bitcoin Guix CI
+# Bitcoin CI
 
-NixOS configuration for running continuous Guix builds of Bitcoin Core, with results uploaded to CDash.
+NixOS configuration for running Bitcoin Core continuous integration tests, with results uploaded to CDash.
 
 ## Dashboard
 
@@ -14,37 +14,45 @@ It will open a new issue in this repo if hashes of a revision do not match.
 
 ## How It Works
 
-This NixOS configuration sets up three systemd services:
+The NixOS configuration is split into composable modules:
 
-1. **bitcoin-sdk-download** - Downloads the macOS SDK required for cross-compilation (runs once)
-2. **bitcoin-repo-setup** - Clones the Bitcoin repository (runs once)
-3. **bitcoin-ci** - Runs `ctest -S guix.cmake` continuously, resetting to origin/master before each build
+- `modules/base.nix` - System config (power, nix, packages, firewall, SSH, fail2ban)
+- `modules/user.nix` - CI user + home-manager shell config
+- `modules/bitcoin-ci.nix` - Shared CI skeleton: repo-setup service, bitcoin-ci service (without ExecStart)
+- `modules/guix.nix` - Guix variant: sdk-download, guix daemon, guix-specific ExecStart
+- `modules/valgrind-fuzz.nix` - Valgrind/fuzz variant: qa-assets-setup, nix-shell ExecStart
 
-The CI service:
-- Fetches and resets to latest `origin/master`
+Each host combines the shared modules with one variant module. The `bitcoin-ci` service skeleton (restart policy, environment, user) is defined once in `bitcoin-ci.nix`, and each variant module adds its own `ExecStart`, `ExecStartPre`, and `ReadWritePaths`.
+
+### Guix Variant
+
+- Downloads macOS SDK for cross-compilation
 - Runs `contrib/guix/guix-build` for all platforms
 - Generates build hashes for all output files
 - Uploads results and hashes to CDash
-- Cleans up build artifacts after each run
-- Restarts on failure
+
+### Valgrind/Fuzz Variant
+
+- Clones qa-assets repo for fuzz corpora
+- Builds Bitcoin Core in a nix-shell with valgrind
+- Runs fuzz and valgrind tests
+- Uploads results to CDash
 
 ### CI Scripts
 
-The CTest/CDash configuration is self-contained in this repository:
-
-- `scripts/guix.cmake` - CTest dashboard script that orchestrates the build
+- `scripts/guix.cmake` - CTest dashboard script for guix builds
+- `scripts/valgrind-fuzz.cmake` - CTest dashboard script for valgrind/fuzz
 - `scripts/CTestConfig.cmake` - CDash submit URL configuration
 
 These are symlinked to `/data/ci/` and `/data/bitcoin/` respectively on deployment.
 
 ## Hosts
 
-Two CI runners are configured:
-
-| Host | Arch | SSH Config | Disk Layout |
-|------|------|------------|-------------|
-| `guix-ci` | x86_64 | `guix-ci` | 2x NVMe (root LVM + /data) |
-| `guix-ci-arm64` | aarch64 | `guix-ci-arm64` | HC_Volume (ESP) + QEMU HARDDISK (root + /data) |
+| Host | Arch | Variant | SSH Config | Disk Layout |
+|------|------|---------|------------|-------------|
+| `guix-ci` | x86_64 | guix | `guix-ci` | 2x NVMe (root LVM + /data) |
+| `guix-ci-arm64` | aarch64 | guix | `guix-ci-arm64` | HC_Volume (ESP) + QEMU HARDDISK (root + /data) |
+| `valgrind-fuzz` | x86_64 | valgrind-fuzz | `valgrind-fuzz` | 2x NVMe (root LVM + /data) |
 
 ## Deploying to Your Own Server
 
@@ -56,9 +64,9 @@ Two CI runners are configured:
 
 ### Configuration
 
-1. **SSH Keys**: Update `ssh_keys` in `flake.nix` with your public key(s):
+1. **SSH Keys**: Update `sshKeys` in `flake.nix` with your public key(s):
    ```nix
-   ssh_keys = [
+   sshKeys = [
      "ssh-ed25519 AAAA... your-key@example.com"
    ];
    ```
@@ -137,11 +145,15 @@ All build data is stored on a dedicated `/data` partition:
 
 ## Environment Variables
 
-The CI service sets these environment variables for the Guix build:
+The CI service sets these environment variables (variant-dependent):
 
+**Guix:**
 - `SDK_PATH=/data/sdk` - macOS SDK location
 - `SOURCES_PATH=/data/sources` - Depends source cache
 - `BASE_CACHE=/data/cache` - Built package cache
+
+**Valgrind/Fuzz:**
+- `QA_ASSETS_PATH=/data/qa-assets` - Fuzz corpora and test assets
 
 ## Build Hashes
 
