@@ -59,11 +59,15 @@ ctest_update()
 ctest_configure(OPTIONS "--preset;valgrind-fuzz")
 ctest_build()
 
+include(ProcessorCount)
+ProcessorCount(NCPU)
+
 set(FUZZ_OUTPUT_FILE "${BUILD_DIR}/fuzz-output.txt")
 execute_process(
   COMMAND ${BUILD_DIR}/test/fuzz/test_runner.py
     --valgrind
     -l DEBUG
+    -j ${NCPU}
     ${QA_ASSETS_PATH}/fuzz_corpora/
     --empty_min_time=60
   WORKING_DIRECTORY ${BUILD_DIR}
