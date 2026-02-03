@@ -334,17 +334,24 @@
               buildPath = "/data/build";
               ciPath = "/data/ci";
               ciUser = "satoshi";
+              buildDeps = [
+                pkgs.boost
+                pkgs.libevent
+                pkgs.sqlite
+                pkgs.capnproto
+                pkgs.openssl
+                pkgs.zlib
+              ];
             in
             {
-              environment.systemPackages = with pkgs; [
-                gcc
-                ninja
-                pkg-config
-                valgrind
-                libevent
-                boost
-                sqlite
-                capnproto
+              environment.systemPackages = [
+                pkgs.cmake
+                pkgs.ninja
+                pkgs.gcc
+                pkgs.pkg-config
+                pkgs.python3
+                pkgs.ccache
+                pkgs.valgrind
               ];
 
               systemd.tmpfiles.rules = [
@@ -372,7 +379,14 @@
               systemd.services.bitcoin-ci = {
                 after = [ "bitcoin-qa-assets-setup.service" ];
                 requires = [ "bitcoin-qa-assets-setup.service" ];
-                environment.QA_ASSETS_PATH = qaAssetsPath;
+                environment = {
+                  QA_ASSETS_PATH = qaAssetsPath;
+                  CMAKE_PREFIX_PATH = lib.concatStringsSep ":" (
+                    lib.concatMap (pkg: [ (lib.getDev pkg) (lib.getLib pkg) ]) buildDeps
+                  );
+                  PKG_CONFIG_PATH = lib.concatMapStringsSep ":" (pkg: "${lib.getDev pkg}/lib/pkgconfig") buildDeps;
+                  LD_LIBRARY_PATH = lib.makeLibraryPath buildDeps;
+                };
                 serviceConfig = {
                   ExecStartPre = lib.mkForce "+${pkgs.bash}/bin/bash -c 'chown -R ${ciUser}:users /data/bitcoin ${qaAssetsPath} ${buildPath}'";
                   ReadWritePaths = [
