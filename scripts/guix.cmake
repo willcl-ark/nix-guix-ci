@@ -36,6 +36,10 @@ execute_process(
   WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}
 )
 
+file(WRITE "${CTEST_BINARY_DIRECTORY}/CTestCustom.cmake" "
+set(CTEST_CUSTOM_ERROR_MATCH \"\${CTEST_CUSTOM_ERROR_MATCH}\" \"SDK does not exist\")
+")
+
 ctest_start(Continuous)
 ctest_update()
 ctest_build()
