@@ -196,8 +196,6 @@
                   pkgs.cmake
                   pkgs.coreutils
                   pkgs.curl
-                  pkgs.docker
-                  pkgs.eza
                   pkgs.fd
                   pkgs.findutils
                   pkgs.git
@@ -208,14 +206,10 @@
                   pkgs.htop
                   pkgs.jq
                   pkgs.just
-                  pkgs.magic-wormhole
-                  pkgs.mosh
                   pkgs.neovim
-                  pkgs.podman
                   pkgs.python3
                   pkgs.ripgrep
                   pkgs.time
-                  pkgs.tmux
                 ];
 
                 networking.firewall = {
