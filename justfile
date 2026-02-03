@@ -62,3 +62,8 @@ status host=default_host:
 [group('monitor')]
 status-all host=default_host:
     ssh {{host}} "systemctl status bitcoin-*"
+
+# Force a CI rebuild without waiting for new commits
+[group('live')]
+force-build host=default_host:
+    ssh {{host}} "sudo -u satoshi git -C /data/bitcoin reset --hard HEAD~1 && sudo systemctl restart bitcoin-ci"
