@@ -83,13 +83,13 @@
                 systemd.services.bitcoin-sdk-download = {
                   description = "Download Bitcoin macOS SDK";
                   wantedBy = [ "multi-user.target" ];
-                  unitConfig.ConditionPathExists = "!${sdkPath}/Xcode-15.0-15A240d-extracted-SDK-with-libcxx-headers";
+                  unitConfig.ConditionPathExists = "!${sdkPath}/Xcode-26.1.1-17B100-extracted-SDK-with-libcxx-headers";
                   serviceConfig = {
                     Type = "oneshot";
                     RemainAfterExit = true;
                     User = ciUser;
                     WorkingDirectory = sdkPath;
-                    ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.curl}/bin/curl -fL https://bitcoincore.org/depends-sources/sdks/Xcode-15.0-15A240d-extracted-SDK-with-libcxx-headers.tar | ${pkgs.gnutar}/bin/tar -xf - -C ${sdkPath}'";
+                    ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.curl}/bin/curl -fL https://bitcoincore.org/depends-sources/sdks/Xcode-26.1.1-17B100-extracted-SDK-with-libcxx-headers.tar | ${pkgs.gnutar}/bin/tar -xf - -C ${sdkPath}'";
                   };
                 };
 
