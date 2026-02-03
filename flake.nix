@@ -334,31 +334,21 @@
               buildPath = "/data/build";
               ciPath = "/data/ci";
               ciUser = "satoshi";
-              buildDeps = [
-                pkgs.boost
-                pkgs.libevent
-                pkgs.sqlite
-                pkgs.capnproto
-                pkgs.openssl
-                pkgs.zlib
-              ];
+              shellFile = pkgs.writeText "shell.nix" ''
+                let pkgs = import ${pkgs.path} {}; in
+                pkgs.mkShell {
+                  packages = with pkgs; [ cmake ninja gcc pkg-config python3 ccache valgrind ];
+                  buildInputs = with pkgs; [ boost libevent sqlite capnproto openssl zlib ];
+                }
+              '';
             in
             {
-              environment.systemPackages = [
-                pkgs.cmake
-                pkgs.ninja
-                pkgs.gcc
-                pkgs.pkg-config
-                pkgs.python3
-                pkgs.ccache
-                pkgs.valgrind
-              ];
-
               systemd.tmpfiles.rules = [
                 "d ${qaAssetsPath} 0755 ${ciUser} users -"
                 "d ${buildPath} 0755 ${ciUser} users -"
                 "L+ ${ciPath}/valgrind-fuzz.cmake - - - - ${./scripts/valgrind-fuzz.cmake}"
                 "L+ /data/bitcoin/CMakeUserPresets.json - - - - ${./scripts/CMakeUserPresets.json}"
+                "L+ ${ciPath}/shell.nix - - - - ${./scripts/shell.nix}"
               ];
 
               systemd.services.bitcoin-qa-assets-setup = {
@@ -381,13 +371,9 @@
                 requires = [ "bitcoin-qa-assets-setup.service" ];
                 environment = {
                   QA_ASSETS_PATH = qaAssetsPath;
-                  CMAKE_PREFIX_PATH = lib.concatStringsSep ":" (
-                    lib.concatMap (pkg: [ (lib.getDev pkg) (lib.getLib pkg) ]) buildDeps
-                  );
-                  PKG_CONFIG_PATH = lib.concatMapStringsSep ":" (pkg: "${lib.getDev pkg}/lib/pkgconfig") buildDeps;
-                  LD_LIBRARY_PATH = lib.makeLibraryPath buildDeps;
                 };
                 serviceConfig = {
+                  ExecStart = lib.mkForce "${pkgs.nix}/bin/nix-shell -I nixpkgs=${pkgs.path} ${shellFile} --run '${pkgs.cmake}/bin/ctest -S ${ciPath}/valgrind-fuzz.cmake -VV'";
                   ExecStartPre = lib.mkForce "+${pkgs.bash}/bin/bash -c 'chown -R ${ciUser}:users /data/bitcoin ${qaAssetsPath} ${buildPath}'";
                   ReadWritePaths = [
                     buildPath
