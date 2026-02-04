@@ -43,6 +43,9 @@ def fetch_builds(hours=None):
         for build in group.get("builds", []):
             if cutoff_ts and build.get("builddatefull", 0) < cutoff_ts:
                 continue
+            name = build.get("buildname", "")
+            if not name.startswith("guix-"):
+                continue
             builds.append(
                 {
                     "id": build["id"],
