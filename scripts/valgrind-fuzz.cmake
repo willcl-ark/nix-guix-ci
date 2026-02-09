@@ -62,26 +62,10 @@ ctest_build()
 include(ProcessorCount)
 ProcessorCount(NCPU)
 
-set(FUZZ_OUTPUT_FILE "${BUILD_DIR}/fuzz-output.txt")
-execute_process(
-  COMMAND ${BUILD_DIR}/test/fuzz/test_runner.py
-    --valgrind
-    -l DEBUG
-    -j ${NCPU}
-    ${QA_ASSETS_PATH}/fuzz_corpora/
-    --empty_min_time=60
-  WORKING_DIRECTORY ${BUILD_DIR}
-  RESULT_VARIABLE FUZZ_RESULT
-  OUTPUT_FILE ${FUZZ_OUTPUT_FILE}
-  ERROR_FILE ${FUZZ_OUTPUT_FILE}
+file(WRITE "${CTEST_BINARY_DIRECTORY}/CTestTestfile.cmake"
+  "add_test(NAME valgrind-fuzz COMMAND ${BUILD_DIR}/test/fuzz/test_runner.py --valgrind -l DEBUG -j ${NCPU} ${QA_ASSETS_PATH}/fuzz_corpora/ --empty_min_time=60)\nset_tests_properties(valgrind-fuzz PROPERTIES TIMEOUT 0)\n"
 )
 
-if(NOT FUZZ_RESULT EQUAL 0)
-  message(SEND_ERROR "Fuzz test_runner.py failed with exit code ${FUZZ_RESULT}")
-endif()
-
-if(EXISTS "${FUZZ_OUTPUT_FILE}")
-  set(CTEST_NOTES_FILES "${FUZZ_OUTPUT_FILE}")
-endif()
+ctest_test()
 
 ctest_submit()
