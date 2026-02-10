@@ -63,7 +63,7 @@ include(ProcessorCount)
 ProcessorCount(NCPU)
 
 file(WRITE "${CTEST_BINARY_DIRECTORY}/CTestTestfile.cmake"
-  "add_test(NAME valgrind-fuzz COMMAND ${BUILD_DIR}/test/fuzz/test_runner.py --valgrind -l DEBUG -j ${NCPU} ${QA_ASSETS_PATH}/fuzz_corpora/ --empty_min_time=60)\nset_tests_properties(valgrind-fuzz PROPERTIES TIMEOUT 0)\n"
+  "add_test(valgrind-fuzz ${BUILD_DIR}/test/fuzz/test_runner.py --valgrind -l DEBUG -j ${NCPU} ${QA_ASSETS_PATH}/fuzz_corpora/ --empty_min_time=60)\nset_tests_properties(valgrind-fuzz PROPERTIES TIMEOUT 0)\n"
 )
 
 ctest_test()
