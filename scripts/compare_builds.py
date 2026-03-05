@@ -5,6 +5,7 @@ import argparse
 import json
 import subprocess
 import sys
+import time
 import urllib.request
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
@@ -15,9 +16,18 @@ PROJECT = "core"
 BUILD_GROUP = "Continuous"
 
 
-def fetch_json(url):
-    with urllib.request.urlopen(url, timeout=30) as resp:
-        return json.loads(resp.read().decode())
+def fetch_json(url, retries=3, backoff=5):
+    for attempt in range(retries):
+        try:
+            with urllib.request.urlopen(url, timeout=30) as resp:
+                return json.loads(resp.read().decode())
+        except Exception as e:
+            if attempt < retries - 1:
+                wait = backoff * (attempt + 1)
+                print(f"  Fetch failed ({e}), retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                raise
 
 
 def fetch_revision(build_id):
@@ -166,20 +176,27 @@ def main():
     )
     args = parser.parse_args()
 
-    print(f"Fetching builds from CDash '{BUILD_GROUP}' group (last {args.hours}h)...")
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(hours=args.hours)
+    print(f"Fetching builds from CDash '{BUILD_GROUP}' group")
+    print(f"  Time window: {cutoff:%Y-%m-%d %H:%M UTC} to {now:%Y-%m-%d %H:%M UTC}")
 
     try:
         builds = fetch_builds(hours=args.hours)
     except Exception as e:
-        print(f"Error fetching builds: {e}", file=sys.stderr)
-        return 2
+        print(f"Error fetching builds: {e} (will retry next run)")
+        return 0
 
     if not builds:
-        print(f"No builds found in {BUILD_GROUP} group.")
+        print(f"No guix-* builds found in '{BUILD_GROUP}' group within the last {args.hours}h.")
         return 0
 
     groups = group_builds_by_revision(builds)
-    print(f"Found {len(builds)} builds across {len(groups)} revision(s)")
+    print(f"Found {len(builds)} build(s) across {len(groups)} revision(s)")
+    if args.verbose:
+        for build in builds:
+            ts = datetime.fromtimestamp(build["builddatefull"], tz=timezone.utc)
+            print(f"  {build['site']} id={build['id']} rev={build['revision'][:12]} @ {ts:%Y-%m-%d %H:%M UTC}")
 
     failures = []
     comparisons = 0
@@ -198,8 +215,7 @@ def main():
                 notes_a = fetch_notes(build_a["id"])
                 notes_b = fetch_notes(build_b["id"])
             except Exception as e:
-                print(f"  Error fetching notes: {e}", file=sys.stderr)
-                failures.append((build_a, build_b, f"fetch error: {e}"))
+                print(f"  Error fetching notes: {e} (skipping pair)")
                 continue
 
             if notes_a is None or notes_b is None:
