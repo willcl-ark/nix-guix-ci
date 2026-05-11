@@ -11,7 +11,6 @@
   systemd.tmpfiles.rules = [
     "d ${bitcoinPath} 0755 ${ciUser} users -"
     "d ${ciPath} 0755 ${ciUser} users -"
-    "L+ ${bitcoinPath}/CTestConfig.cmake - - - - ${../scripts/CTestConfig.cmake}"
     "L+ ${bitcoinPath}/CTestCustom.cmake - - - - ${../scripts/CTestCustom.cmake}"
   ];
 
